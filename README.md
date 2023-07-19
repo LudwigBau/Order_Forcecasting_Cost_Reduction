@@ -1,26 +1,27 @@
 # Order Forecasting and Cost Reduction
 
-This repository contains the official implementation of the paper "Enhancing E-Commerce Fulfillment Operations: Machine Learning Approaches for Order Forecasting and Cost Reduction", currently under development by Ludwig Baunach and co-author Stefan Spinler.
+This repository contains the official implementation of the paper "Enhancing E-Commerce Fulfillment Operations: Machine Learning Approaches for Order Forecasting and Cost Reduction." The paper is currently under development by Ludwig Baunach and co-author Stefan Spinler.
 
-**Note** Unfortunately, we are not able to share our data due to a NDA 
+Please note, the code here is a subset of scripts from our private projects, and therefore the file paths are not relevant. The repository's intent is to provide a methodological overview of our paper's work.
+
+**Note:** Unfortunately, we cannot share our data due to a Non-Disclosure Agreement (NDA).
 
 ## How to Navigate and Use the Code
 
-**Main Folder**: This is where all the primary scripts are located. If you're looking to understand the flow of the code, this is a good place to start.
+**Main Folder:** The main folder contains all the primary scripts. It serves as a good starting point to understand the code flow.
 
-**Running the Code**: Begin by running `main_data_prep.py` to pre-process the data. After this step, run `main_forecasting.py` to execute the forecasting models, create ensembles, and run the workforce optimization. Note that you have to select the src's you want to run.
+**Running the Code:** To use the code, start by running `main_data_prep.py` for data pre-processing. After that, execute `main_forecasting.py` to perform forecasting, create ensembles, and initiate workforce optimization. Note that you'll need to specify the sources you wish to run.
 
-**Code Structure**: The repository is organized into several folders, each serving a specific purpose:
-   - `data_prep` contains scripts for data wrangling and preparation.
-   - `model` houses the code for the forecasting models.
-   - `evaluation` includes scripts for evaluating the performance of the models.
-   - `Simulation` contains scripts for workforce scheduling simulation.
-   
-**Utilities**: The `utils` folder contains custom functions that are utilized by the main scripts.
+**Code Structure:** The repository is organized into several key folders, each serving a specific purpose:
+- `data_prep`: Contains scripts for data wrangling and preparation.
+- `model`: Houses the forecasting model scripts.
+- `evaluation`: Includes scripts for evaluating the models' performance.
+- `Simulation`: Contains scripts for workforce scheduling simulations.
+
+**Utilities:** The `utils` folder contains custom functions used throughout the main scripts.
 
 ## Requirements
-The code is still under development. As soon as the paper is accepted by a journal we will add example data and requirements.txt
+The code is currently under development. Once the paper gets accepted by a journal, we will add example data and a `requirements.txt` file detailing the necessary libraries and their versions.
 
 ## Runtime
-The code runs on our data for ca. 30 hours on a 2,4 GHz Quad-Core Intel Core i5 8 GB 2133 MHz LPDDR3 Intel Iris Plus Graphics 655 1536 MB macOS
-
+On our dataset, the code takes approximately 30 hours to run on a machine with a 2.4 GHz Quad-Core Intel Core i5, 8GB 2133 MHz LPDDR3 RAM, Intel Iris Plus Graphics 655 1536 MB, running macOS.
