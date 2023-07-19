@@ -30,8 +30,7 @@ On our dataset, the code takes approximately 30 hours to run on a machine with a
 
 ## Research Question
 
-How does applying novel machine learning methods affect work-
-force planning of warehouse operations in the e-commerce context?
+How does applying novel machine learning methods affect workforce planning of warehouse operations in the e-commerce context?
 
 To answer this question, the following hypothesises will be tested:
 
