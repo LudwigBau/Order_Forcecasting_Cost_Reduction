@@ -25,3 +25,22 @@ The code is currently under development. Once the paper gets accepted by a journ
 
 ## Runtime
 On our dataset, the code takes approximately 30 hours to run on a machine with a 2.4 GHz Quad-Core Intel Core i5, 8GB 2133 MHz LPDDR3 RAM, Intel Iris Plus Graphics 655 1536 MB, running macOS.
+
+# Introduction to the research
+
+## Research Question
+
+How does applying novel machine learning methods affect work-
+force planning of warehouse operations in the e-commerce context?
+
+To answer this question, the following hypothesises will be tested:
+**Hypothesis 1.** Machine learning methods outperform statistical methods which will in turn
+outperform deep learning methods.
+**Hypothesis 2.** Ensembles of best methods outperform single methods
+**Hypothesis 3.** External data improves forecasting accuracy significantly
+**Hypothesis41.** Machine learning forecasts lead to more accurate workforce planning and there-
+fore to significant cost reduction
+
+## Methods 
+
+
