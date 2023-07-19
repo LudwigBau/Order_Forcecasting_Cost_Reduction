@@ -42,5 +42,5 @@ outperform deep learning methods.
 fore to significant cost reduction
 
 ## Methods 
-
+![Methods](main/figures/Methods.png)
 
