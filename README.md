@@ -34,11 +34,12 @@ How does applying novel machine learning methods affect work-
 force planning of warehouse operations in the e-commerce context?
 
 To answer this question, the following hypothesises will be tested:
-**Hypothesis 1.** Machine learning methods outperform statistical methods which will in turn
+
+- **Hypothesis 1.** Machine learning methods outperform statistical methods which will in turn
 outperform deep learning methods.
-**Hypothesis 2.** Ensembles of best methods outperform single methods
-**Hypothesis 3.** External data improves forecasting accuracy significantly
-**Hypothesis41.** Machine learning forecasts lead to more accurate workforce planning and there-
+- **Hypothesis 2.** Ensembles of best methods outperform single methods
+- **Hypothesis 3.** External data improves forecasting accuracy significantly
+- **Hypothesis4.** Machine learning forecasts lead to more accurate workforce planning and there-
 fore to significant cost reduction
 
 ## Methods 
