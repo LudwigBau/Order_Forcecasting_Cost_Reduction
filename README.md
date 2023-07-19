@@ -8,7 +8,7 @@ This repository contains the official implementation of the paper "Enhancing E-C
 
 **Main Folder**: This is where all the primary scripts are located. If you're looking to understand the flow of the code, this is a good place to start.
 
-**Running the Code**: Begin by running `main_data_prep.py` to pre-process the data. After this step, run `main_forecasting.py` to execute the forecasting models, create ensembles, and run the workforce optimization.
+**Running the Code**: Begin by running `main_data_prep.py` to pre-process the data. After this step, run `main_forecasting.py` to execute the forecasting models, create ensembles, and run the workforce optimization. Note that you have to select the src's you want to run.
 
 **Code Structure**: The repository is organized into several folders, each serving a specific purpose:
    - `data_prep` contains scripts for data wrangling and preparation.
@@ -19,6 +19,8 @@ This repository contains the official implementation of the paper "Enhancing E-C
 **Utilities**: The `utils` folder contains custom functions that are utilized by the main scripts.
 
 ## Requirements
-
 The code is still under development. As soon as the paper is accepted by a journal we will add example data and requirements.txt
+
+## Runtime
+The code runs on our data for ca. 30 hours on a 2,4 GHz Quad-Core Intel Core i5 8 GB 2133 MHz LPDDR3 Intel Iris Plus Graphics 655 1536 MB macOS
 
