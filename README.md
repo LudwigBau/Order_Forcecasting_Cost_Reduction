@@ -16,7 +16,7 @@ Please note, the code here is a subset of scripts from our private projects, and
 - `data_prep`: Contains scripts for data wrangling and preparation.
 - `model`: Houses the forecasting model scripts.
 - `evaluation`: Includes scripts for evaluating the models' performance.
-- `Simulation`: Contains scripts for workforce scheduling simulations.
+- `simulation`: Contains scripts for workforce scheduling simulations.
 
 **Utilities:** The `utils` folder contains custom functions used throughout the main scripts.
 
