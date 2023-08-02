@@ -1,0 +1,11 @@
+\ Model WorkforceModel_copy
+\ LP format - for model browsing. Use MPS format to capture full model detail.
+Minimize
+ 
+Subject To
+ wp_constraint_down_t0_k10: 120 w_p[0,10] >= 10668.34269194617
+ backlog_constraint_t0_k10: 120 w_p[0,10] + 100 w_e[0,10] + 11 y_o[0,10]
+   + z[0,10] + v[0,10] = 9347.2
+Bounds
+ w_p[0,10] free
+End

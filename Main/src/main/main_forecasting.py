@@ -1,5 +1,4 @@
 import subprocess
-import pandas as pd
 
 if __name__ == "__main__":
     # Define the script's path
@@ -12,14 +11,12 @@ if __name__ == "__main__":
     eval = "../evaluation/forecast_evaluation.py"
 
     # Workforce Model
-    workforce = "../simulation/workforce.py"
+    workforce = "../simulation/single_and_robust_workforce.py"
 
-    # select correct src
-    
-    #scripts = [classic_ts, tree_based_ts, lstm_ts, nhits_ts, workforce]
-    scripts = [workforce]
-    #script_names = ['Classic', 'Tree Based', 'LSTM', 'Nhits', 'workforce']
-    script_names = ["Workforce"]
+    #scripts = [classic_ts, tree_based_ts, lstm_ts, nhits_ts]
+    scripts = [eval, workforce]
+    #script_names = ['Classic', 'Tree Based', 'LSTM', 'Nhits']
+    script_names = ["Evaluation", "Workforce"]
 
     for script, name in zip(scripts, script_names):
 

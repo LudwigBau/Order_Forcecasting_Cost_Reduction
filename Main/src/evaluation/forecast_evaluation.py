@@ -199,8 +199,11 @@ if __name__ == "__main__":
     back_df, pred_df = back_pred_df(ts_results, lgbm_results, xgb_results, lstm_results, nhits_results)
     ind_metrics_df = ensemble_metrics(back_df, pred_df).sort_values("val_mape")
 
-    # Get nest Models to create ensembles (to limit compexity)
+    # Get nest Models to create ensembles (to limit complexity)
     list_of_selected_models = list(ind_metrics_df[1:11].category)
+
+    # add main benchmark (its not in top 10 of all models)
+    list_of_selected_models.append("L_4_sarimax")
 
     # Create ensemble and save as df
     back_ens_df, pred_ens_df = create_ensemble(back_df, pred_df, list_of_selected_models)

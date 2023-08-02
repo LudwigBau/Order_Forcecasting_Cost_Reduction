@@ -9,6 +9,52 @@ from sklearn.metrics import mean_squared_error as mse
 # Define the function to calculate the rmse
 def rmse(y_true, y_pred):
     return 'rmse', np.sqrt(mse(y_true, y_pred)), False
+
+# get test size for grouped data
+def get_test_size(df, time_horizon=9):
+    nr_group = df.group.nunique()
+    test_size = nr_group * time_horizon
+    return test_size
+
+# Name models correctly (features etc.)
+def make_category_df(df_list, test_data):
+    # Get all features
+    all_features = set()
+
+    for df in df_list:
+        all_features.update(test_data[df].columns)
+
+    # Define features for each category
+    date_and_id = [col for col in all_features if col == 'date' or col == 'new_customer_id' or col == 'new_product_id'
+                   or col == "state" or col == "warehouse_chain" or col == "group"]
+    target = [col for col in all_features if col == 'quantity']
+    indicators = [col for col in all_features if '_id_' in col or '_decile' in col]
+    time = [col for col in all_features if 'tm_' in col]
+    momentum_lag = [col for col in all_features if '_roll_' in col or '_lag_' in col]
+    price = [col for col in all_features if 'price' in col or 'discount' in col]
+    weather = ['precipitation_height', 'sunshine_duration', 'temperature_air_mean_200', 'sunshine_duration_h',
+               'suns_classes', 'temp_classes', 'rain_classes']
+    holiday = [col for col in all_features if 'holiday' in col or 'event' in col or 'week' in col]
+
+    # basic = features I always need
+    basic = date_and_id + target + indicators + time + price
+
+    # make catagories of features
+    Time_Momentum_Lag = basic + momentum_lag
+    Time_Momentum_Lag_Weather = Time_Momentum_Lag + weather
+    Time_Momentum_Lag_Holiday = Time_Momentum_Lag + holiday
+    Time_Momentum_Lag_Weather_Holiday = Time_Momentum_Lag + weather + holiday
+
+    # Create a dictionary with category names as keys and lists of features as values
+    categories_dict = {
+        "Time_Momentum_Lag": Time_Momentum_Lag,
+        "Time_Momentum_Lag_Weather": Time_Momentum_Lag_Weather,
+        "Time_Momentum_Lag_Holiday": Time_Momentum_Lag_Holiday,
+        "Time_Momentum_Lag_Weather_Holiday": Time_Momentum_Lag_Weather_Holiday
+    }
+
+    return categories_dict
+
     
 
 # Define the function to get the top features

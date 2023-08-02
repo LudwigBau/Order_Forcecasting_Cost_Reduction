@@ -52,8 +52,8 @@ def calc_error(real, pred):
 
 def simulate_forecast(error, simulated_actuals, samples=samples):
 
-    #Set min demand as 80% of actuals
-    min_demand = 0.8 * simulated_actuals.min()
+    #Set min demand as 50% of actuals
+    min_demand = 0.5 * simulated_actuals.min()
 
     #get stats
     normal_mean_error = np.mean(error)
@@ -65,8 +65,8 @@ def simulate_forecast(error, simulated_actuals, samples=samples):
     # add errors to forecast
     sim_forecast = simulated_actuals + normal_samples_error
 
-    # Make sure sim_forecast does not go below 0.8*min_demand
-    sim_forecast = np.maximum(sim_forecast, 0.8 * min_demand)
+    # Make sure sim_forecast does not go below 0.5*min_demand
+    sim_forecast = np.maximum(sim_forecast, 0.5 * min_demand)
 
     return sim_forecast
 

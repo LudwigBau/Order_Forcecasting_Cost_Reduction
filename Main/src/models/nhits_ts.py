@@ -58,9 +58,9 @@ def nhits_forecast(train_data):
         num_blocks=1,
         num_layers=2,
         layer_widths=512,
-        n_epochs=10,
-        nr_epochs_val_period=1,
-        batch_size=32, )
+        n_epochs=100,
+        nr_epochs_val_period=10,
+        batch_size=32,)
 
     # Fit the model on the scaled time series
     model.fit(train_series_scaled)
