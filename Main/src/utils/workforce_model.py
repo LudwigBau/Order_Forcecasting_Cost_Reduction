@@ -73,9 +73,9 @@ p_p = 12  # Productivity per planned worker (filled products per hour)
 p_e = 10  # Productivity per extra worker (filled products per hour)
 p_o = 11  # Productivity per overtime worker (filled products per hour)
 
-L = 10  # Maximum shift length
-
 cost_i = 1  # take the middle of range (0,2)
+
+L = 8
 
 def workforce_model(full_back_df, full_pred_df, c_p, c_e, c_o, psi, cost_i):
 
@@ -101,7 +101,7 @@ def workforce_model(full_back_df, full_pred_df, c_p, c_e, c_o, psi, cost_i):
             print(f"Starting simulation for week {week_index} out of {len(weeks_array)}, "
                   f"model {model_index} out of {len(full_back_df.columns)}: {model}")
 
-            sim_a, sim_f = simulation_main(actual_week, pred_week, samples=samples, verbose=False)
+            sim_a, sim_f = simulation_main(actual_week, pred_week, samples=samples, verbose=True)
 
             a_t = sim_a.reshape(T+1, K)
             d_t = sim_f.reshape(T+1, K)
@@ -115,9 +115,12 @@ def workforce_model(full_back_df, full_pred_df, c_p, c_e, c_o, psi, cost_i):
             d_t = np.delete(d_t, 0, axis=0)
 
             # Set Up Workforce Model:
+            # Create empty list that stores cost values:
+            all_cost = []
 
             # Step2: Create the model
             m = gp.Model("WorkforceModel")
+            m.setParam('Threads', 1)
             m.ModelSense = GRB.MINIMIZE
 
             # Step3: Define decision variables:
@@ -128,6 +131,8 @@ def workforce_model(full_back_df, full_pred_df, c_p, c_e, c_o, psi, cost_i):
             # Second stage decision variables: Number of extra workers and overtime (h)
             w_e = m.addMVar((T, K), vtype=GRB.CONTINUOUS, name="w_e")
             y_o = m.addMVar((T, K), vtype=GRB.CONTINUOUS, name="y_o")
+            z = m.addMVar((T, K), vtype=GRB.CONTINUOUS, name="z")
+            v = m.addMVar((T, K), vtype=GRB.CONTINUOUS, name="v")
 
             # Step 3: Define First Stage Objective
             # objective function of the overall problem and min labour cost for expected demand for each workday
@@ -153,17 +158,7 @@ def workforce_model(full_back_df, full_pred_df, c_p, c_e, c_o, psi, cost_i):
             # Constraint: Number of planned workers should be enough to meet the expected demand
             for t in range(T):
                 for k in range(K):
-                    m.addConstr(w_p[t, k] * p_p * L <= 1.1 * d_t[t, k], name=f"wp_constraint_up_t{t}_k{k}")
-
-            # Constraint: Number of planned workers should be at least 0.9 of expected demand
-            for t in range(T):
-                for k in range(K):
-                    m.addConstr(w_p[t, k] * p_p * L >= 0.9 * d_t[t, k], name=f"wp_constraint_down_t{t}_k{k}")
-
-            # Constraint: Shift length of any worker does not exceed 10 hours
-            for t in range(T):
-                for k in range(K):
-                    m.addConstr(L <= 10, name=f"shift_length_constraint_t{t}_k{k}")
+                    m.addConstr(w_p[t, k] * p_p * L == d_t[t, k], name=f"wp_constraint_up_t{t}_k{k}")
 
             # Step 6: Define Second Stage Constraints
 
@@ -173,21 +168,16 @@ def workforce_model(full_back_df, full_pred_df, c_p, c_e, c_o, psi, cost_i):
             # Constraint: A given percentage (psi) of the total demand (daily demand and backlogs) are
             # filled by extra workers in addition to planned workers’ overtime
 
-            # Decision variable: Backlog
-            z = m.addMVar((T, K), vtype=GRB.CONTINUOUS, name="z")
-            # Decision variable: Overcapacity
-            v = m.addMVar((T, K), vtype=GRB.CONTINUOUS, name="v")  # Auxiliary variable
-
             for t in range(T):  # Start from 0 because there can be a backlog on the first day
                 for k in range(K):
                     if t > 0:
-                        m.addConstr(z[t, k] - v[t, k] == a_t[t, k] + z[t - 1, k] - (
-                                    w_p[t, k] * p_p * L + y_o[t, k] * p_o + w_e[t, k] * p_e * L),
+                        m.addConstr(z[t, k] - v[t, k] == a_t[t, k] + z[t - 1, k] -
+                                    (w_p[t, k] * p_p * L + y_o[t, k] * p_o + w_e[t, k] * p_e * L),
                                     name=f"backlog_constraint_t{t}_k{k}")
                     else:
-                        m.addConstr(
-                            z[t, k] - v[t, k] == a_t[t, k] - (w_p[t, k] * p_p * L + y_o[t, k] * p_o + w_e[t, k] * p_e * L),
-                            name=f"backlog_constraint_t{t}_k{k}")
+                        m.addConstr(z[t, k] - v[t, k] == a_t[t, k] -
+                                    (w_p[t, k] * p_p * L + y_o[t, k] * p_o + w_e[t, k] * p_e * L),
+                                    name=f"backlog_constraint_t{t}_k{k}")
 
             m.addConstrs((z[t, k] >= 0 for t in range(T) for k in range(K)))  # z is non-negative
             m.addConstrs((v[t, k] >= 0 for t in range(T) for k in range(K)))  # v is non-negative
@@ -196,7 +186,8 @@ def workforce_model(full_back_df, full_pred_df, c_p, c_e, c_o, psi, cost_i):
             # Constraint: The total productivity should be at least psi percent of the total demand
             for t in range(T):
                 for k in range(K):
-                    m.addConstr(w_p[t, k] * p_p * L + y_o[t, k] * p_o + w_e[t, k] * p_e * L >= psi * (a_t[t, k] + z[t-1, k]),
+                    m.addConstr(w_p[t, k] * p_p * L + y_o[t, k] * p_o + w_e[t, k] * p_e * L >=
+                                psi * a_t[t, k] + z[t-1, k],
                                 name=f"service_level_constraint_t{t}_k{k}")
 
             # Constrain: the total number of extra workers is 0 or positive
@@ -208,6 +199,10 @@ def workforce_model(full_back_df, full_pred_df, c_p, c_e, c_o, psi, cost_i):
             for t in range(T):
                 for k in range(K):
                     m.addConstr(y_o[t, k] <= 0.2 * w_p[t, k] * L, name=f"overtime_limit_constraint_t{t}_k{k}")
+
+            for t in range(T):
+                for k in range(K):
+                    m.addConstr(y_o[t, k] >= 0, name=f"overtime_limit_constraint_t{t}_k{k}")
 
             # Constraint: No backlog on the last day
             m.addConstr(z[T-1, :] == 0, name="no_backlog_last_day")
@@ -224,11 +219,18 @@ def workforce_model(full_back_df, full_pred_df, c_p, c_e, c_o, psi, cost_i):
                 m.computeIIS()
                 m.write("model.ilp")
 
+            for t in range(T):
+                for k in range(K): all_cost.append(c_p * w_p[t, k].x * L + c_e * w_e[t, k].x * L +
+                                                   c_o * y_o[t, k].x)
+
             # Results
 
             # Calculate and print the average cost
             average_cost = m.ObjVal / (T * K)
             print(f'Average cost: {average_cost}')
+
+            std_cost = np.std(all_cost)
+            print(f'Std cost: {std_cost}')
 
             # Calculate and print the average number of planned workers
             average_planned_workers = np.sum(w_p.X) / (T * K)
@@ -256,8 +258,9 @@ def workforce_model(full_back_df, full_pred_df, c_p, c_e, c_o, psi, cost_i):
                 'week': week_index,
                 'psi_scenario': psi,
                 'cost_scenario': cost_i,
-                'cost_scenario_values': f'c_p_{c_p}_c_e_{c_e}_c_o_{c_o}',  # added this line
+                'cost_scenario_values': f'c_p_{c_p}_c_e_{c_e}_c_o_{c_o}',
                 'avg_cost': average_cost,
+                'std_cost': std_cost,
                 'avg_planned_workers': average_planned_workers,
                 'avg_extra_workers': average_extra_workers,
                 'avg_overtime': average_overtime,

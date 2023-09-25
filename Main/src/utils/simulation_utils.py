@@ -7,23 +7,21 @@ from scipy.stats import gamma
 samples = 2800
 alpha = 3
 verbose = False
-
-
+np.random.seed(42)  # You can choose any number for the seed
 
 def simulate_actuals(actuals, alpha=alpha, samples=samples, verbose=verbose):
-
     # Estimate min and max (with slack)
     min_demand = 0.8 * actuals.min()
     max_demand = 1.2 * actuals.max()
 
     # Estimate parameters for the gamma distribution
-    gamma_shape_est, gamma_loc_est, gamma_scale_est = gamma.fit(actuals, floc=0)
+    gamma_shape_est, _, gamma_scale_est = gamma.fit(actuals, floc=0)  # We ignore the original loc
 
     # Adjust the shape parameter to make the gamma distribution more extreme
     alpha = alpha  # Modify this value to make the distribution more extreme
 
     # Generate random samples from the gamma distribution with the adjusted shape parameter
-    gamma_samples_est = gamma.rvs(a=alpha, scale=gamma_scale_est, size=samples)
+    gamma_samples_est = gamma.rvs(a=alpha, loc=min_demand, scale=gamma_scale_est, size=samples)  # Set loc to min_demand
 
     # Truncate the gamma samples to the desired range
     truncated_gamma_samples_est = np.clip(gamma_samples_est, min_demand, max_demand)
@@ -32,7 +30,7 @@ def simulate_actuals(actuals, alpha=alpha, samples=samples, verbose=verbose):
     normal_mean_est = np.mean(actuals)
     normal_std_est = np.std(actuals)
 
-    # Print Prameters
+    # Print Parameters
     if verbose == True:
         print("Estimated Parameters:")
         print("Normal Distribution - Mean:", normal_mean_est, "Standard Deviation:", normal_std_est)
@@ -51,7 +49,6 @@ def calc_error(real, pred):
 
 
 def simulate_forecast(error, simulated_actuals, samples=samples):
-
     #Set min demand as 50% of actuals
     min_demand = 0.5 * simulated_actuals.min()
 
@@ -66,13 +63,14 @@ def simulate_forecast(error, simulated_actuals, samples=samples):
     sim_forecast = simulated_actuals + normal_samples_error
 
     # Make sure sim_forecast does not go below 0.5*min_demand
-    sim_forecast = np.maximum(sim_forecast, 0.5 * min_demand)
+    sim_forecast = np.maximum(sim_forecast, min_demand)
 
     return sim_forecast
 
 
 def simulation_main(real, pred, alpha=alpha, samples=samples, verbose=verbose):
-
+    # Set seed
+    np.random.seed(42)
     error = calc_error(real, pred)
     sim_a = simulate_actuals(real, alpha=alpha, samples=samples, verbose=verbose)
     sim_f = simulate_forecast(error, sim_a, samples=samples)

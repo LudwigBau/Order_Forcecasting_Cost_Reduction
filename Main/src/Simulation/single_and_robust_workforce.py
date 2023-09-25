@@ -12,8 +12,11 @@ full_back_df = pd.read_pickle("../../data/modelling_results/ens_back_results_v2.
 full_pred_df = pd.read_pickle("../../data/modelling_results/ens_pred_results_v2.pickle")
 
 # select forecast models to run robust optimisation on
-robust_back_df = full_back_df[["actual", "L_4_sarimax", "L_4_Time_Momentum_Lag_lgbm"]]
-robust_pred_df = full_pred_df[["actual", "L_4_sarimax", "L_4_Time_Momentum_Lag_lgbm"]]
+robust_back_df = full_back_df[["actual", "L_4_sarimax", "L_4_Time_Momentum_Lag_lgbm",
+                               "L_4_Time_Momentum_Lag_Weather_Holiday_lgbm_L_4_Time_Momentum_Lag_lgbm"]]
+
+robust_pred_df = full_pred_df[["actual", "L_4_sarimax", "L_4_Time_Momentum_Lag_lgbm",
+                               "L_4_Time_Momentum_Lag_Weather_Holiday_lgbm_L_4_Time_Momentum_Lag_lgbm"]]
 
 # WORKFORCE-MODEL PARAMETERS
 
@@ -49,19 +52,18 @@ c_o = c_o_l[1]
 
 cost_i = 1
 
-full_eval_df = workforce_model(full_back_df, full_pred_df, c_p, c_e, c_o, psi, cost_i)
+#full_eval_df = workforce_model(full_back_df, full_pred_df, c_p, c_e, c_o, psi, cost_i)
 
 # save for today
 # Get today's date as a string in the format 'yymmdd' to save file accordingly
 date_string = datetime.now().strftime('%y%m%d')
 
 # Combine it with your base filename
-filename = f'../../data/modelling_results/workforce_results_single_all{date_string}.pickle'
+#filename = f'../../data/modelling_results/workforce_results_single_all{date_string}.pickle'
 
 ## Save your model
-with open(filename, 'wb') as handle:
-    pickle.dump(full_eval_df, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
+#with open(filename, 'wb') as handle:
+#    pickle.dump(full_eval_df, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 # then run best model benchmark and perfect prediction
 
@@ -73,51 +75,60 @@ robust_psi_eval_df = pd.DataFrame()
 
 # loop over range of scenarios
 for cost_i in range(0, len(c_p_l)):
+
     # select scenario
-    c_p = c_p_l[cost_i]
-    c_e = c_e_l[cost_i]
-    c_o = c_o_l[cost_i]
+    c_p_t = c_p_l[cost_i]
+    c_e_t = c_e_l[cost_i]
+    c_o_t = c_o_l[cost_i]
 
     # select psi scenario
-    psi = psi_l[1]
+    psi_t = psi_l[1]
 
     print(f"Start COST sensitivity scenario nr: {cost_i + 1}:")
 
-    temp_robust_cost_eval_df = workforce_model(robust_back_df, robust_pred_df, c_p, c_e, c_o, psi, cost_i)
+    temp_robust_cost_eval_df = workforce_model(robust_back_df, robust_pred_df, c_p_t, c_e_t, c_o_t, psi_t, cost_i)
 
     # append to the robust_cost_eval_df
     robust_cost_eval_df = pd.concat([robust_cost_eval_df, temp_robust_cost_eval_df], ignore_index=True)
 
 for psi_i in range(0, len(psi_l)):
-    # select scenario
-    psi = psi_l[psi_i]
 
-    # keep cost constant
+    # select scenario
+    psi_t = psi_l[psi_i]
+
     cost_i = 1
-    c_p = c_p_l[cost_i]
-    c_e = c_e_l[cost_i]
-    c_o = c_o_l[cost_i]
+    # keep cost constant
+    c_p_t = c_p_l[1]
+    c_e_t = c_e_l[1]
+    c_o_t = c_o_l[1]
 
     print(f"Start PSI sensitivity scenario nr: {psi_i + 1}:")
 
-    temp_robust_psi_eval_df = workforce_model(robust_back_df, robust_pred_df, c_p, c_e, c_o, psi, cost_i)
+    temp_robust_psi_eval_df = workforce_model(robust_back_df, robust_pred_df, c_p_t, c_e_t, c_o_t, psi_t, cost_i)
 
     # append to the robust_psi_eval_df
     robust_psi_eval_df = pd.concat([robust_psi_eval_df, temp_robust_psi_eval_df], ignore_index=True)
 
 # concat the two robustness test dfs to get a final robustness df
-
 robust_evaluation_df = pd.concat([robust_cost_eval_df, robust_psi_eval_df], ignore_index=True)
-
-print(robust_evaluation_df)
+#print(robust_evaluation_df)
 
 # save for today
 # Get today's date as a string in the format 'yymmdd' to save file accordingly
 date_string = datetime.now().strftime('%y%m%d')
 
-# Combine it with your base filename
+# save cost and psi scenario separately
+
+# Cost filename
 filename = f'../../data/modelling_results/workforce_results_robust{date_string}.pickle'
 
-## Save your model
+# Save cost scenario df
 with open(filename, 'wb') as handle:
     pickle.dump(robust_evaluation_df, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+# Psi filename
+#filename = f'../../data/modelling_results/workforce_results_robust_psi{date_string}.pickle'
+
+# Save psi scenario df
+#with open(filename, 'wb') as handle:
+#    pickle.dump(robust_psi_eval_df, handle, protocol=pickle.HIGHEST_PROTOCOL)

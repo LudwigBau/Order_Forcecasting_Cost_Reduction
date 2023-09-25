@@ -14,9 +14,9 @@ if __name__ == "__main__":
     workforce = "../simulation/single_and_robust_workforce.py"
 
     #scripts = [classic_ts, tree_based_ts, lstm_ts, nhits_ts]
-    scripts = [eval, workforce]
+    scripts = [workforce]
     #script_names = ['Classic', 'Tree Based', 'LSTM', 'Nhits']
-    script_names = ["Evaluation", "Workforce"]
+    script_names = ["Workforce"]
 
     for script, name in zip(scripts, script_names):
 

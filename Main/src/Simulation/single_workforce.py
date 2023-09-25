@@ -198,9 +198,8 @@ for model_index, model in enumerate(full_back_df.columns, start=1):
                                 w_p[t, k] * p_p * L + y_o[t, k] * p_o + w_e[t, k] * p_e * L),
                                 name=f"backlog_constraint_t{t}_k{k}")
                 else:
-                    m.addConstr(
-                        z[t, k] - v[t, k] == a_t[t, k] - (w_p[t, k] * p_p * L + y_o[t, k] * p_o + w_e[t, k] * p_e * L),
-                        name=f"backlog_constraint_t{t}_k{k}")
+                    m.addConstr(z[t, k] - v[t, k] == a_t[t, k] - (w_p[t, k] * p_p * L + y_o[t, k] * p_o + w_e[t, k] * p_e * L),
+                                name=f"backlog_constraint_t{t}_k{k}")
 
         m.addConstrs((z[t, k] >= 0 for t in range(T) for k in range(K)))  # z is non-negative
         m.addConstrs((v[t, k] >= 0 for t in range(T) for k in range(K)))  # v is non-negative
@@ -219,7 +218,7 @@ for model_index, model in enumerate(full_back_df.columns, start=1):
         # Constraint: The total productivity should be at least psi percent of the total demand
         for t in range(T):  # We can now use T because we have w_e[t] for the last day
             for k in range(K):
-                m.addConstr(w_p[t, k] * p_p * L + y_o[t, k] * p_o + w_e[t, k] * p_e * L >= psi * (a_t[t, k] + z[t-1, k]),
+                m.addConstr(w_p[t, k] * p_p * L + y_o[t, k] * p_o + w_e[t, k] * p_e * L >= psi * a_t[t, k] + z[t-1, k],
                             name=f"service_level_constraint_t{t}_k{k}")
 
         # Add constrain for extra workers
