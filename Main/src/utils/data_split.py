@@ -1,8 +1,7 @@
-import pandas as pd
-
-
 # create test and train datasets
-# final evaluation is based on test dataset
+
+# Libraries
+import pandas as pd
 
 # machine learning split
 def ml_data_split(df, days):
@@ -56,16 +55,3 @@ def ml_data_date_split(df, days):
     x_val = mdf_sorted.loc[(df["date"] >= cutoff_date), :]
 
     return x_train, x_val
-
-# test
-# df = pd.read_csv("../data/final/total_sales.csv")
-
-# time series
-# print("TS:")
-# x_train, x_test = ts_data_split(df, 10, "quantity")
-# print(x_test.head(), x_train.head())
-
-
-# print("ML:")
-# x_train, x_test = ml_data_split(df, 10)
-# print(x_test.head(), x_train.head())

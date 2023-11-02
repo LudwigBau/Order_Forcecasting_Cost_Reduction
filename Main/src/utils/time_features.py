@@ -4,6 +4,7 @@ import numpy as np
 import math
 from feature_engine.creation import CyclicalFeatures
 
+
 def to_cyclical_time_features(df):
     # Set date clolumn as datetime
     df["date"] = pd.to_datetime(df.date)
@@ -26,7 +27,6 @@ def to_cyclical_time_features(df):
     df = cyclical.fit_transform(df)
 
     return df
-
 
 
 def to_time_feature(df):

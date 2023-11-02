@@ -1,5 +1,3 @@
-# NOTE: dfs[df_name] = {"train": train_df, "test": df} includes df not test_df so make scaling work
-
 # Libraries
 import pandas as pd
 import pickle

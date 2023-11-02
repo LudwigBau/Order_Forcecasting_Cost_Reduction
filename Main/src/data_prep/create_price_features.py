@@ -1,9 +1,8 @@
 # Libaries
+import pandas as pd
 import warnings
 warnings.filterwarnings('ignore')
 
-import pandas as pd
-#import numpy as np
 
 if __name__ == "__main__":
     # Load Data
@@ -35,9 +34,6 @@ if __name__ == "__main__":
     prices_df["discount_min"] = prices_df.groupby(['new_product_id'])['item_discount'].transform('min')
     prices_df["discount_std"] = prices_df.groupby(['new_product_id'])['item_discount'].transform('std')
     prices_df["discount_mean"] = prices_df.groupby(['new_product_id'])['item_discount'].transform('mean')
-
-    # Noramlisation
-    #prices_df["discount_norm"] = prices_df["item_discount"] / prices_df["discount_max"]
 
     # How many unique discount
     prices_df['discount_nunique'] = prices_df.groupby(['new_product_id'])['item_discount'].transform('nunique')

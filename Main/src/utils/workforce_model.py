@@ -1,52 +1,35 @@
 # Description:
 
-# Write down steps to take to model the workforce model from "Enhancing fulfilment operation using ml"
 # There are several sections to be addressed:
 
 # Simulating Scenarios:
-# Create artificial actual values based on distribution in a given week
+# Create artificial actual values based on best fit distribution in a given week
 # Create artificial forecasts based on error distribution in a given week
 
 # First Stage Optimisation:
 # Schedule planned workforce based on expected demand (forecast)
 # Calculate demanded work in hours
-# Fit number of workers on hours (per worker 10h)
+# Fit number of workers on hours
 
 # Second Stage Optimisation:
 # Three options:
 # 1. no change, planned workforce can tackle the demand
 # 2. overtime, planned workforce use
-# 3. extra workers, if overtime is not sufficient to fill todays demand, it exceeds tomorrow's overtime capacity
-#                   then add extra workforce for tomorrow's shift.
-# Test for different service levels. fill rate of 85, 90, 95 %
+# 3. extra workers, if overtime is not sufficient to fill todays demand, then add extra workforce for tomorrow's shift.
 
 # Problem Description:
 
 # I have six days of forecast.
 # I plan my workforce based on the forecast
 # Each day I get to know the actual demand and can adapt my workforce by overtime or extra workers on the next day to
-# fill a service level of X %
+# fill a service level of psi %
 
 
 # Workflow:
-# Use functional programming paradigm:
 
-# 1. Simulate (2800 scenarios per week per method) based on data
-# 2. Multistep multistage optimisation
-# 3. Save Results (nr. planned workers, nr. extra workers, total cost)
-# 4. Analyse distribution of the three variables
-# 5. Compare average cost per method.
-
-
-# How To Optimise using Gurobi:
-
-# Define decision variable
-# Define constants
-# Define First Stage Objective Function
-# Define Constraints of first obj. function
-# Define Second Stage Objective Function
-# Define Constraints of second obj. function
-# Save and analyse results
+# 1. Simulate (5600 scenarios per week per method) based on data
+# 2. Multistage optimisation minimising labour cost
+# 3. Save Results
 
 # Import libraries:
 import pandas as pd
@@ -58,10 +41,10 @@ from gurobipy import GRB
 from src.utils.simulation_utils import simulation_main
 from src.utils.simulation_utils import create_weeks
 
-# MODEL SETUP
+# MODEL SETUP (initial parameters)
 
 # Set up simulation parameters
-samples = 2800  # control number of scenarios, try to take multiple of 7
+samples = 5600  # control number of scenarios, try to take multiple of 7
 alpha = 3  # Control tail of simulated forecast
 verbose = True  # Print gamma parameters
 np.random.seed(42)  # Set seed
@@ -71,13 +54,14 @@ K = int(samples/(T+1))  # Number of scenarios (T+1 = one week)
 
 p_p = 12  # Productivity per planned worker (filled products per hour)
 p_e = 10  # Productivity per extra worker (filled products per hour)
-p_o = 11  # Productivity per overtime worker (filled products per hour)
+p_o = 11  # Productivity per overtime wor1ker (filled products per hour)
 
-cost_i = 1  # take the middle of range (0,2)
+cost_i = 1  # take the middle of range (0,2) (indicates hourly wages planned workers, extra workers and overtime
 
-L = 8
+L = 8  # Shift length in hours
 
-def workforce_model(full_back_df, full_pred_df, c_p, c_e, c_o, psi, cost_i):
+
+def workforce_model(full_back_df, full_pred_df, dist_name, c_p, c_e, c_o, psi, cost_i, samples):
 
     back_act_df = full_back_df["actual"]
     pred_act_df = full_pred_df["actual"]
@@ -86,6 +70,20 @@ def workforce_model(full_back_df, full_pred_df, c_p, c_e, c_o, psi, cost_i):
 
     # Initialize an empty DataFrame to store the evaluation metrics
     evaluation_df = pd.DataFrame()
+
+    cost_values = np.zeros((7, T, K))
+
+    # First stage decision variables:
+    w_p_values = np.zeros((7, T, K))
+
+    # Second stage decision variables:
+    w_e_values = np.zeros((7, T, K))
+    y_o_values = np.zeros((7, T, K))
+    z_values = np.zeros((7, T, K))
+    v_values = np.zeros((7, T, K))
+
+    # Initialize an empty dictionary to hold the variable_dict for each model
+    all_models_dict = {}
 
     # Set up simulation data
     for model_index, model in enumerate(full_back_df.columns, start=1):
@@ -101,7 +99,8 @@ def workforce_model(full_back_df, full_pred_df, c_p, c_e, c_o, psi, cost_i):
             print(f"Starting simulation for week {week_index} out of {len(weeks_array)}, "
                   f"model {model_index} out of {len(full_back_df.columns)}: {model}")
 
-            sim_a, sim_f = simulation_main(actual_week, pred_week, samples=samples, verbose=True)
+            sim_a, sim_f = simulation_main(real=actual_week, pred=pred_week, dist_name=dist_name,
+                                           samples=samples, verbose=True)
 
             a_t = sim_a.reshape(T+1, K)
             d_t = sim_f.reshape(T+1, K)
@@ -125,14 +124,14 @@ def workforce_model(full_back_df, full_pred_df, c_p, c_e, c_o, psi, cost_i):
 
             # Step3: Define decision variables:
 
-            # First stage decision variables: Number of planned workers
-            w_p = m.addMVar((T, K), vtype=GRB.CONTINUOUS, name="w_p")
+            # First stage decision variables:
+            w_p = m.addMVar((T, K), vtype=GRB.CONTINUOUS, name="w_p")  # Number of planned workers
 
-            # Second stage decision variables: Number of extra workers and overtime (h)
-            w_e = m.addMVar((T, K), vtype=GRB.CONTINUOUS, name="w_e")
-            y_o = m.addMVar((T, K), vtype=GRB.CONTINUOUS, name="y_o")
-            z = m.addMVar((T, K), vtype=GRB.CONTINUOUS, name="z")
-            v = m.addMVar((T, K), vtype=GRB.CONTINUOUS, name="v")
+            # Second stage decision variables:
+            w_e = m.addMVar((T, K), vtype=GRB.CONTINUOUS, name="w_e")  # Number of extra workers
+            y_o = m.addMVar((T, K), vtype=GRB.CONTINUOUS, name="y_o")  # Hours of overtime
+            z = m.addMVar((T, K), vtype=GRB.CONTINUOUS, name="z")  # Backlog
+            v = m.addMVar((T, K), vtype=GRB.CONTINUOUS, name="v")  # Overcapacity
 
             # Step 3: Define First Stage Objective
             # objective function of the overall problem and min labour cost for expected demand for each workday
@@ -162,7 +161,7 @@ def workforce_model(full_back_df, full_pred_df, c_p, c_e, c_o, psi, cost_i):
 
             # Step 6: Define Second Stage Constraints
 
-            # in the second stage, you adjust the plan based on the actual demand (a_t).
+            # In the second stage, we adjust the plan based on the actual demand (a_t).
             # This is represented by the second stage constraints:
 
             # Constraint: A given percentage (psi) of the total demand (daily demand and backlogs) are
@@ -181,7 +180,6 @@ def workforce_model(full_back_df, full_pred_df, c_p, c_e, c_o, psi, cost_i):
 
             m.addConstrs((z[t, k] >= 0 for t in range(T) for k in range(K)))  # z is non-negative
             m.addConstrs((v[t, k] >= 0 for t in range(T) for k in range(K)))  # v is non-negative
-
 
             # Constraint: The total productivity should be at least psi percent of the total demand
             for t in range(T):
@@ -220,10 +218,44 @@ def workforce_model(full_back_df, full_pred_df, c_p, c_e, c_o, psi, cost_i):
                 m.write("model.ilp")
 
             for t in range(T):
-                for k in range(K): all_cost.append(c_p * w_p[t, k].x * L + c_e * w_e[t, k].x * L +
-                                                   c_o * y_o[t, k].x)
+                for k in range(K):
+                    all_cost.append(c_p * w_p[t, k].x * L + c_e * w_e[t, k].x * L + c_o * y_o[t, k].x)
 
             # Results
+
+            # Save all values
+            for t in range(T):
+                for k in range(K):
+                    cost_values[week_index - 1, t, k] = c_p * w_p[t, k].X * L + c_e * w_e[t, k].X * L + c_o * y_o[
+                        t, k].X
+
+            # Save all values
+            for t in range(T):
+                for k in range(K):
+                    w_p_values[week_index - 1, t, k] = w_p[t, k].X
+
+            for t in range(T):
+                for k in range(K):
+                    w_e_values[week_index - 1, t, k] = w_e[t, k].X
+
+            for t in range(T):
+                for k in range(K):
+                    y_o_values[week_index - 1, t, k] = y_o[t, k].X
+
+            for t in range(T):
+                for k in range(K):
+                    z_values[week_index - 1, t, k] = z[t, k].X
+
+            for t in range(T):
+                for k in range(K):
+                    v_values[week_index - 1, t, k] = v[t, k].X
+
+            # Create a dictionary to hold the arrays for the current model
+            variable_dict = {'cost': cost_values.copy(), 'w_p': w_p_values.copy(), "y_o": y_o_values.copy(),
+                             "w_e": w_e_values.copy(), "z": z_values.copy(), "v": v_values.copy()}
+
+            # Add this dictionary to the all_models_dict, keyed by the model name
+            all_models_dict[model] = variable_dict
 
             # Calculate and print the average cost
             average_cost = m.ObjVal / (T * K)
@@ -274,7 +306,7 @@ def workforce_model(full_back_df, full_pred_df, c_p, c_e, c_o, psi, cost_i):
             # concatenate the new dataframe to the existing one
             evaluation_df = pd.concat([evaluation_df, temp_df], ignore_index=True)
 
-    return evaluation_df
+    return evaluation_df, all_models_dict
 
 
 

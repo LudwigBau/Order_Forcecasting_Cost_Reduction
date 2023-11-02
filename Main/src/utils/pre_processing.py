@@ -3,11 +3,6 @@ import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 
 
-# Steps:
-# 1. encode categorical variables (like year)
-# 2. scale (MinMax) numerical variables that are not in range 0-1
-
-
 # Define Pre_Processing steps
 def pre_processing(df, list_of_columns=None, scale_cols=None, encode_cols=None):
     # selected features / columns
@@ -25,7 +20,6 @@ def pre_processing(df, list_of_columns=None, scale_cols=None, encode_cols=None):
         # Scale
         if scale_cols is None:
             print("No columns to scale")
-
 
         else:
             # copy df

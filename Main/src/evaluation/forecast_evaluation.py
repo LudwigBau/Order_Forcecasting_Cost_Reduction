@@ -172,8 +172,8 @@ def ensemble_metrics(backtest_df, pred_df):
         pred_mape = mape(pred_df.actual, pred)
 
         # Calculate MAE
-        val_mae = mae(backtest_df.actual, backtest)
-        pred_mae = mae(pred_df.actual, pred)
+        #val_mae = mae(backtest_df.actual, backtest)
+        #pred_mae = mae(pred_df.actual, pred)
 
         # Append the results to the metrics_data list
         metrics_data.append({
@@ -186,7 +186,7 @@ def ensemble_metrics(backtest_df, pred_df):
             # 'pred_mae': pred_mae
         })
 
-        ensemble_metrics = pd.DataFrame(metrics_data)
+    ensemble_metrics = pd.DataFrame(metrics_data)
 
     return ensemble_metrics
 

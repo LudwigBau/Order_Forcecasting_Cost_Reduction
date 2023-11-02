@@ -1,44 +1,90 @@
 # Import
 import numpy as np
 import pandas as pd
-from scipy.stats import gamma
+import scipy.stats
 
-# Steps
+# Set-Up
 samples = 2800
 alpha = 3
 verbose = False
-np.random.seed(42)  # You can choose any number for the seed
+np.random.seed(42)
 
-def simulate_actuals(actuals, alpha=alpha, samples=samples, verbose=verbose):
-    # Estimate min and max (with slack)
-    min_demand = 0.8 * actuals.min()
-    max_demand = 1.2 * actuals.max()
 
-    # Estimate parameters for the gamma distribution
-    gamma_shape_est, _, gamma_scale_est = gamma.fit(actuals, floc=0)  # We ignore the original loc
+def fit_distribution(actuals, dist_name=None):
 
-    # Adjust the shape parameter to make the gamma distribution more extreme
-    alpha = alpha  # Modify this value to make the distribution more extreme
+    all_dists_df = pd.DataFrame(
+        columns=['Distribution', 'MLE_Params', 'K-S_Stat', 'K-S_p-value', 'AD_Stat', 'Param1', 'Param2', 'Param3',
+                 'Param_Names'])
+    temp_dfs = []
 
-    # Generate random samples from the gamma distribution with the adjusted shape parameter
-    gamma_samples_est = gamma.rvs(a=alpha, loc=min_demand, scale=gamma_scale_est, size=samples)  # Set loc to min_demand
+    param_names_dict = {
+        'norm': ['Mean', 'Std Dev'],
+        'lognorm': ['Shape (s)', 'Loc', 'Scale'],
+        'gamma': ['Shape (a)', 'Loc', 'Scale'],
+        'weibull_min': ['Shape (c)', 'Loc', 'Scale']
+    }
 
-    # Truncate the gamma samples to the desired range
-    truncated_gamma_samples_est = np.clip(gamma_samples_est, min_demand, max_demand)
+    if dist_name is None:
+        dists = ['norm', 'lognorm', 'gamma', 'weibull_min']
 
-    # Normal estimates
-    normal_mean_est = np.mean(actuals)
-    normal_std_est = np.std(actuals)
+        for dist_name in dists:
+            dist = getattr(scipy.stats, dist_name)
+            params = dist.fit(actuals)
 
-    # Print Parameters
-    if verbose == True:
-        print("Estimated Parameters:")
-        print("Normal Distribution - Mean:", normal_mean_est, "Standard Deviation:", normal_std_est)
-        print("Gamma Distribution - Shape:", gamma_shape_est, "Scale:", gamma_scale_est)
-        print("Alpha:", alpha)
+            # Perform K-S test
+            D, p_value = scipy.stats.kstest(actuals, dist_name, args=params)
 
-    # Return Value
-    return truncated_gamma_samples_est
+            # Extract individual parameters for separate columns
+            param1, param2, param3 = params if len(params) == 3 else (*params, None)
+
+            # Get parameter names
+            param_names = param_names_dict.get(dist_name, ['-'])
+            param_names_str = ', '.join([f"{i + 1}:{name}" for i, name in enumerate(param_names)])
+
+            # Add to temporary DataFrame list
+            temp_df = pd.DataFrame({
+                'Distribution': [dist_name],
+                # 'MLE_Params': [params],
+                'Param_Names': [param_names_str],
+                'Param1': [param1],
+                'Param2': [param2],
+                'Param3': [param3],
+                'K-S_Stat': [D],
+                'K-S_p-value': [p_value],
+            })
+            temp_dfs.append(temp_df)
+
+        # Concatenate all temporary DataFrames
+        all_dists_df = pd.concat(temp_dfs, ignore_index=True)
+
+        # Find the best distribution based on K-S test p-value
+        dist_name = all_dists_df.loc[all_dists_df['K-S_p-value'].idxmax(), 'Distribution']
+
+    # Fit the best distribution to the data
+    dist = getattr(scipy.stats, dist_name)
+    params = dist.fit(actuals)
+
+    print(f"Fitting distribution: {dist_name}")
+    print(f"MLE Parameters: {params}")
+
+    return dist_name, params, all_dists_df
+
+
+def simulate_actuals(actuals, dist_name, samples=2800, verbose=False):
+    # Set max demand as 100% of actuals
+    max_actual = np.max(actuals)  # Get the maximum value of the actuals
+
+    _, params, _ = fit_distribution(actuals, dist_name=dist_name)
+    # Generate random samples from the best-fitting distribution
+    dist = getattr(scipy.stats, dist_name)
+
+    simulated_samples = dist.rvs(size=samples, *params)
+    clipped_samples = np.clip(simulated_samples, None, max_actual)
+    if verbose:
+        print(f"Best-fitting distribution: {dist_name}")
+        print(f"MLE Parameters: {params}")
+
+    return clipped_samples
 
 
 def calc_error(real, pred):
@@ -49,36 +95,37 @@ def calc_error(real, pred):
 
 
 def simulate_forecast(error, simulated_actuals, samples=samples):
+
     #Set min demand as 50% of actuals
-    min_demand = 0.5 * simulated_actuals.min()
+    min_demand = 0
 
     #get stats
     normal_mean_error = np.mean(error)
     normal_std_error = np.std(error)
 
-    # sample
-    normal_samples_error = np.random.normal(normal_mean_error, normal_std_error, size=samples)
+    # simulate error (use variance reduction of 0.5 standard-dev)
+    normal_samples_error = np.random.normal(normal_mean_error, normal_std_error/2, size=samples)
 
     # add errors to forecast
     sim_forecast = simulated_actuals + normal_samples_error
 
-    # Make sure sim_forecast does not go below 0.5*min_demand
+    # Truncate the normal distribution 
     sim_forecast = np.maximum(sim_forecast, min_demand)
 
     return sim_forecast
 
 
-def simulation_main(real, pred, alpha=alpha, samples=samples, verbose=verbose):
+def simulation_main(real, pred, dist_name, samples, verbose):
     # Set seed
     np.random.seed(42)
     error = calc_error(real, pred)
-    sim_a = simulate_actuals(real, alpha=alpha, samples=samples, verbose=verbose)
+    sim_a = simulate_actuals(real, dist_name, samples=samples, verbose=verbose)
     sim_f = simulate_forecast(error, sim_a, samples=samples)
 
     return sim_a, sim_f
 
 
-def create_weeks(back, pred):
+def create_weeks(back, pred):   
     # Concat backtest and predictions
     df = pd.concat([back, pred], axis=0)
 

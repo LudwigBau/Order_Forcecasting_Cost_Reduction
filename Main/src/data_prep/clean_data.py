@@ -1,6 +1,5 @@
 # Libaries
 import warnings
-
 warnings.filterwarnings('ignore')
 
 # Libraries
@@ -13,6 +12,7 @@ if __name__ == "__main__":
 
     # Select all
     df_all = pd.read_csv("../../data/raw/orders_b2c.csv")
+
     # Select B2C
     df = df_all[df_all["business_type"] == "B2C"]
 
@@ -58,8 +58,7 @@ if __name__ == "__main__":
 
     print("Fill Price and Discount finished")
 
-    # Drop na rows of
-    # "product_variant_id", "warehouse_chain", "billing_country", "billing_zip", "filled_prices"
+    # Drop na rows of "product_variant_id", "warehouse_chain", "billing_country", "billing_zip", "filled_prices"
     print("Drop na rows")
     # Rest of filled prices get dropped as well
     df_clean = df.dropna(subset=["product_variant_id", "warehouse_chain", "billing_country",
