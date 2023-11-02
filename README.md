@@ -21,8 +21,7 @@ Please note, the code here is a subset of scripts from our private projects, and
 - `utils`:  contains custom functions used throughout the main scripts.
 
 **notebooks**
-- `Descriptives`: Contains code to create an autocorrelation plot and to visualise order quantaties per time frame
-- `Forecast_Evaluation`: Houses code to evaluate all forecasting models
+- `Descriptives`: Contains code to create an autocorrelation plot and to visualise order quantities per time frame
 - `Workforce_Evaluation`: Includes scripts to create all workforce related results
 
 ## Requirements
