@@ -52,9 +52,9 @@ np.random.seed(42)  # Set seed
 T = 6  # Number of workdays
 K = int(samples/(T+1))  # Number of scenarios (T+1 = one week)
 
-p_p = 12  # Productivity per planned worker (filled products per hour)
-p_e = 10  # Productivity per extra worker (filled products per hour)
-p_o = 11  # Productivity per overtime wor1ker (filled products per hour)
+p_p = 100  # Productivity per planned worker (filled products per hour)
+p_e = 90  # Productivity per extra worker (filled products per hour)
+p_o = 95  # Productivity per overtime wor1ker (filled products per hour)
 
 cost_i = 1  # take the middle of range (0,2) (indicates hourly wages planned workers, extra workers and overtime
 

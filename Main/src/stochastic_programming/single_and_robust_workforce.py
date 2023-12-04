@@ -36,9 +36,9 @@ c_p_l = [16, 18, 20]  # Cost per hour for planned workers (l = list)
 c_e_l = [20, 22, 24]  # Cost per hour for extra workers (l = list)
 c_o_l = [18, 20, 22]  # Cost per hour for overtime (l = list)
 
-p_p = 12  # Productivity per planned worker (filled products per hour)
-p_e = 10  # Productivity per extra worker (filled products per hour)
-p_o = 11  # Productivity per overtime worker (filled products per hour)
+p_p = 100  # Productivity per planned worker (filled products per hour)
+p_e = 90  # Productivity per extra worker (filled products per hour)
+p_o = 95  # Productivity per overtime wor1ker (filled products per hour)
 
 # run with all models
 # define constants (middle values of list)
