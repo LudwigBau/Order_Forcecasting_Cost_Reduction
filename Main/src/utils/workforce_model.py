@@ -14,7 +14,7 @@
 # Second Stage Optimisation:
 # Three options:
 # 1. no change, planned workforce can tackle the demand
-# 2. overtime, planned workforce use
+# 2. overtime, planned workforce use overtime
 # 3. extra workers, if overtime is not sufficient to fill todays demand, then add extra workforce for tomorrow's shift.
 
 # Problem Description:
@@ -46,7 +46,7 @@ from src.utils.simulation_utils import create_weeks
 # Set up simulation parameters
 samples = 5600  # control number of scenarios, try to take multiple of 7
 alpha = 3  # Control tail of simulated forecast
-verbose = True  # Print gamma parameters
+verbose = True  # Print simulation parameters
 np.random.seed(42)  # Set seed
 
 T = 6  # Number of workdays
@@ -149,10 +149,6 @@ def workforce_model(full_back_df, full_pred_df, dist_name, c_p, c_e, c_o, psi, c
             m.setObjective(first_stage_cost + overtime_cost + extra_worker_cost, GRB.MINIMIZE)
 
             # Step 4: Define First Stage Constraints
-
-            # In the code, the planned workers (w_p) are determined in the first stage the forecasted demand (d_t).
-            # It is possible to schedule 10% more workers than expected
-            # This is represented by the first stage constraints:
 
             # Constraint: Number of planned workers should be enough to meet the expected demand
             for t in range(T):
