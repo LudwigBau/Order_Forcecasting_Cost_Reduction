@@ -44,7 +44,3 @@ Secondly, we leverage data from cross-validation and test samples to estimate se
 
 Lastly, we introduce a multi-stage stochastic program with recourse to schedule planned workers based on forecasts and adapt with overtime and extra workers based on actual demand. This program utilises the simulated scenarios as inputs, allowing us to evaluate the operational impact of different forecasting methods in terms of labour costs and scheduling policies.
 
-## Methods 
-![Methods](Main/figures/Methods.png)
-
-
