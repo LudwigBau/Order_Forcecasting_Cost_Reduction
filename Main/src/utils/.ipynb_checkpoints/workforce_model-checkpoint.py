@@ -61,7 +61,8 @@ cost_i = 1  # take the middle of range (0,2) (indicates hourly wages planned wor
 L = 8  # Shift length in hours
 
 
-def workforce_model(full_back_df, full_pred_df, dist_name, c_p, c_e, c_o, psi, cost_i, samples, e_max_rate=0.5):
+def workforce_model(full_back_df, full_pred_df, dist_name, c_p, c_e, c_o, psi, cost_i, samples):
+
     back_act_df = full_back_df["actual"]
     pred_act_df = full_pred_df["actual"]
 
@@ -80,15 +81,6 @@ def workforce_model(full_back_df, full_pred_df, dist_name, c_p, c_e, c_o, psi, c
     y_o_values = np.zeros((7, T, K))
     z_values = np.zeros((7, T, K))
     v_values = np.zeros((7, T, K))
-    slack_values = np.zeros((7, T, K))
-    a_t_values = np.zeros((7, T, K))
-    d_t_values = np.zeros((7, T, K))
-
-    # Parameters
-    # NEW: Maximum extra workforce supply per day (constant or array)
-
-    # NEW: Penalty cost for service-level shortfall (soft constraint).
-    penalty_sl = 10  # large enough to discourage slacking on service
 
     # Initialize an empty dictionary to hold the variable_dict for each model
     all_models_dict = {}
@@ -110,8 +102,8 @@ def workforce_model(full_back_df, full_pred_df, dist_name, c_p, c_e, c_o, psi, c
             sim_a, sim_f = simulation_main(real=actual_week, pred=pred_week, dist_name=dist_name,
                                            samples=samples, verbose=True)
 
-            a_t = sim_a.reshape(T + 1, K)
-            d_t = sim_f.reshape(T + 1, K)
+            a_t = sim_a.reshape(T+1, K)
+            d_t = sim_f.reshape(T+1, K)
 
             # Add the values from Sunday to Monday for each week
             a_t[1] += a_t[0]
@@ -121,31 +113,25 @@ def workforce_model(full_back_df, full_pred_df, dist_name, c_p, c_e, c_o, psi, c
             a_t = np.delete(a_t, 0, axis=0)
             d_t = np.delete(d_t, 0, axis=0)
 
-            # Calculate e_max using e_max_rate
-            average_demand = np.mean(d_t)  # average over all T*K in that week's scenario
-            average_planned_workers_week = average_demand / (p_p * L)
-            e_max = average_planned_workers_week * e_max_rate
-
             # Set Up Workforce Model:
             # Create empty list that stores cost values:
             all_cost = []
 
             # Step2: Create the model
             m = gp.Model("WorkforceModel")
-            m.setParam('Threads', 0)
+            m.setParam('Threads', 1)
             m.ModelSense = GRB.MINIMIZE
 
             # Step3: Define decision variables:
 
             # First stage decision variables:
-            w_p = m.addMVar((T, K), vtype=GRB.CONTINUOUS, lb=0, name="w_p")  # Number of planned workers
+            w_p = m.addMVar((T, K), vtype=GRB.CONTINUOUS, name="w_p")  # Number of planned workers
 
             # Second stage decision variables:
-            w_e = m.addMVar((T, K), vtype=GRB.CONTINUOUS, lb=0, name="w_e")  # Number of extra workers
-            y_o = m.addMVar((T, K), vtype=GRB.CONTINUOUS, lb=0, name="y_o")  # Hours of overtime
-            z = m.addMVar((T, K), vtype=GRB.CONTINUOUS, lb=0, name="z")  # Backlog
-            v = m.addMVar((T, K), vtype=GRB.CONTINUOUS, lb=0, name="v")  # Overcapacity
-            s_slack = m.addMVar((T, K), vtype=GRB.CONTINUOUS, lb=0, name="s_slack")  # slack service-level constraint
+            w_e = m.addMVar((T, K), vtype=GRB.CONTINUOUS, name="w_e")  # Number of extra workers
+            y_o = m.addMVar((T, K), vtype=GRB.CONTINUOUS, name="y_o")  # Hours of overtime
+            z = m.addMVar((T, K), vtype=GRB.CONTINUOUS, name="z")  # Backlog
+            v = m.addMVar((T, K), vtype=GRB.CONTINUOUS, name="v")  # Overcapacity
 
             # Step 3: Define First Stage Objective
             # objective function of the overall problem and min labour cost for expected demand for each workday
@@ -159,20 +145,8 @@ def workforce_model(full_back_df, full_pred_df, dist_name, c_p, c_e, c_o, psi, c
             # Sum over all time Periods
             extra_worker_cost = gp.quicksum(w_e[t, k] * c_e * L for t in range(T) for k in range(K))
 
-            # NEW objective with slack penalty:
-            slack_penalty_cost = gp.quicksum(penalty_sl * s_slack[t, k]
-                                             for t in range(T) for k in range(K))  # NEW
-
             # Objective function: Minimize the sum of the costs of planned workers, overtime, and extra workers
-            m.setObjective(
-                first_stage_cost
-                + overtime_cost
-                + extra_worker_cost
-                + slack_penalty_cost,
-                GRB.MINIMIZE
-            )
-
-            # m.setObjective(first_stage_cost + overtime_cost + extra_worker_cost, GRB.MINIMIZE)
+            m.setObjective(first_stage_cost + overtime_cost + extra_worker_cost, GRB.MINIMIZE)
 
             # Step 4: Define First Stage Constraints
 
@@ -192,42 +166,28 @@ def workforce_model(full_back_df, full_pred_df, dist_name, c_p, c_e, c_o, psi, c
             for t in range(T):  # Start from 0 because there can be a backlog on the first day
                 for k in range(K):
                     if t > 0:
-                        m.addConstr(
-                            z[t, k] - v[t, k] + s_slack[t, k] ==
-                            a_t[t, k] + z[t - 1, k] - (w_p[t, k] * p_p * L + y_o[t, k] * p_o + w_e[t, k] * p_e * L),
-                            name=f"backlog_constraint_t{t}_k{k}")
+                        m.addConstr(z[t, k] - v[t, k] == a_t[t, k] + z[t - 1, k] -
+                                    (w_p[t, k] * p_p * L + y_o[t, k] * p_o + w_e[t, k] * p_e * L),
+                                    name=f"backlog_constraint_t{t}_k{k}")
                     else:
-                        m.addConstr(
-                            z[t, k] - v[t, k] + s_slack[t, k] ==
-                            a_t[t, k] - (w_p[t, k] * p_p * L + y_o[t, k] * p_o + w_e[t, k] * p_e * L),
-                            name=f"backlog_constraint_t{t}_k{k}")
+                        m.addConstr(z[t, k] - v[t, k] == a_t[t, k] -
+                                    (w_p[t, k] * p_p * L + y_o[t, k] * p_o + w_e[t, k] * p_e * L),
+                                    name=f"backlog_constraint_t{t}_k{k}")
 
-            #m.addConstrs((z[t, k] >= 0 for t in range(T) for k in range(K)))  # z is non-negative
-            #m.addConstrs((s_slack[t, k] >= 0 for t in range(T) for k in range(K)))  # s is non-negative
-            #m.addConstrs((v[t, k] >= 0 for t in range(T) for k in range(K)))  # v is non-negative
+            m.addConstrs((z[t, k] >= 0 for t in range(T) for k in range(K)))  # z is non-negative
+            m.addConstrs((v[t, k] >= 0 for t in range(T) for k in range(K)))  # v is non-negative
 
             # Constraint: The total productivity should be at least psi percent of the total demand
             for t in range(T):
                 for k in range(K):
-                    if t > 0:
-                        m.addConstr(w_p[t, k] * p_p * L + y_o[t, k] * p_o + w_e[t, k] * p_e * L + s_slack[t, k] >=
-                                    psi * a_t[t, k] + z[t - 1, k] + s_slack[t - 1, k],
-                                    name=f"service_level_constraint_t{t}_k{k}")
+                    m.addConstr(w_p[t, k] * p_p * L + y_o[t, k] * p_o + w_e[t, k] * p_e * L >=
+                                psi * a_t[t, k] + z[t-1, k],
+                                name=f"service_level_constraint_t{t}_k{k}")
 
-                    else:
-                        m.addConstr(w_p[t, k] * p_p * L + y_o[t, k] * p_o + w_e[t, k] * p_e * L + s_slack[t, k] >=
-                                    psi * a_t[t, k],
-                                    name=f"service_level_constraint_t{t}_k{k}")
-
-            # Constraint: the total number of extra workers is 0 or positive
+            # Constrain: the total number of extra workers is 0 or positive
             for t in range(T):
                 for k in range(K):
                     m.addConstr(w_e[t, k] >= 0, name=f"extra_worker_constraint{t}_k{k}")
-
-            # Constraint: daily supply constraint:
-            for t in range(T):
-                for k in range(K):
-                    m.addConstr(w_e[t, k] <= e_max, name=f"extra_workers_limit_t{t}_k{k}")  # NEW
 
             # Constraint: Amount of overtime is limited to 20% of the total shift length of a worker
             for t in range(T):
@@ -239,7 +199,7 @@ def workforce_model(full_back_df, full_pred_df, dist_name, c_p, c_e, c_o, psi, c
                     m.addConstr(y_o[t, k] >= 0, name=f"overtime_limit_constraint_t{t}_k{k}")
 
             # Constraint: No backlog on the last day
-            # m.addConstr(z[T - 1, :] == 0, name="no_backlog_last_day")  # - s_slack
+            m.addConstr(z[T-1, :] == 0, name="no_backlog_last_day")
 
             # Optimize the model
             m.optimize()
@@ -286,28 +246,9 @@ def workforce_model(full_back_df, full_pred_df, dist_name, c_p, c_e, c_o, psi, c
                 for k in range(K):
                     v_values[week_index - 1, t, k] = v[t, k].X
 
-            for t in range(T):
-                for k in range(K):
-                    slack_values[week_index - 1, t, k] = s_slack[t, k].X
-
-            for t in range(T):
-                for k in range(K):
-                    a_t_values[week_index - 1, t, k] = a_t[t, k]
-            for t in range(T):
-                for k in range(K):
-                    d_t_values[week_index - 1, t, k] = d_t[t, k]
-
             # Create a dictionary to hold the arrays for the current model
-            variable_dict = {'cost': cost_values.copy(),
-                             'w_p': w_p_values.copy(),
-                             "y_o": y_o_values.copy(),
-                             "w_e": w_e_values.copy(),
-                             "z": z_values.copy(),
-                             "v": v_values.copy(),
-                             "s": slack_values.copy(),
-                             "a_t": a_t_values.copy(),
-                             "d_t": d_t_values.copy()
-                             }
+            variable_dict = {'cost': cost_values.copy(), 'w_p': w_p_values.copy(), "y_o": y_o_values.copy(),
+                             "w_e": w_e_values.copy(), "z": z_values.copy(), "v": v_values.copy()}
 
             # Add this dictionary to the all_models_dict, keyed by the model name
             all_models_dict[model] = variable_dict
@@ -332,16 +273,12 @@ def workforce_model(full_back_df, full_pred_df, dist_name, c_p, c_e, c_o, psi, c
             print(f'Average number of overtime hours: {average_overtime}')
 
             # Calculate and print the average number of backlog
-            average_backlog = np.sum(z.X) / (T * K)
+            average_backlog= np.sum(z.X) / (T * K)
             print(f'Average number of backlog: {average_backlog}')
 
             # Calculate and print the average number of overcapacity
             average_overcap = np.sum(v.X) / (T * K)
             print(f'Average number of overcap: {average_overcap}')
-
-            # Calculate and print the average number of slack backlog
-            average_slack_backlog = np.sum(s_slack[t, k].X) / (T * K)
-            print(f'Average number of back slack: {average_slack_backlog}')
 
             # evaluation
             data_dict = {
@@ -349,7 +286,6 @@ def workforce_model(full_back_df, full_pred_df, dist_name, c_p, c_e, c_o, psi, c
                 'week': week_index,
                 'psi_scenario': psi,
                 'cost_scenario': cost_i,
-                'e_max_scenario': e_max_rate,
                 'cost_scenario_values': f'c_p_{c_p}_c_e_{c_e}_c_o_{c_o}',
                 'avg_cost': average_cost,
                 'std_cost': std_cost,
@@ -357,8 +293,7 @@ def workforce_model(full_back_df, full_pred_df, dist_name, c_p, c_e, c_o, psi, c
                 'avg_extra_workers': average_extra_workers,
                 'avg_overtime': average_overtime,
                 'avg_backlog': average_backlog,
-                'avg_overcap': average_overcap,
-                'avg_back_slack': average_slack_backlog
+                'avg_overcap': average_overcap
             }
 
             # create a dataframe with your data

@@ -10,7 +10,6 @@ from statsmodels.tsa.statespace.sarimax import SARIMAX
 
 from sklearn.model_selection import TimeSeriesSplit
 
-
 # backtest
 def ts_backtest(train_data, tscv):
     # Initialize DataFrames to store the backtest and forecasted values
@@ -134,10 +133,8 @@ if __name__ == "__main__":
     tscv = TimeSeriesSplit(gap=0, max_train_size=None, n_splits=5, test_size=9)
 
     # List Datasets
-    df_list = ["L_3", "L_6", "L_4"]
-    #df_list = ["L_3", "L_4", "L_6"]
-    group_list = ["warehouse_chain", "empty","new_customer_id"]
-    #group_list = ["warehouse_chain", "new_customer_id", "empty"]
+    df_list = ["L_1", "L_2", "L_3"]
+    group_list = ["new_customer_id", "warehouse_chain", "empty"]
 
     # Load data
     test_data_dict = {}
@@ -164,7 +161,8 @@ if __name__ == "__main__":
         # select level
         df = test_data_dict[level]
 
-        if level == "L_6":
+        # If top level (no grouping needed)
+        if level == "L_3":
 
             # test
             test_df = df.copy()

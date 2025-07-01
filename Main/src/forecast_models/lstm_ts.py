@@ -143,8 +143,9 @@ if __name__ == "__main__":
 
     # define DFs and groups
 
-    df_list = ["L_3", "L_4", "L_6"]
-    group_list = ["warehouse_chain", "new_customer_id", "empty"]
+    df_list = ["L_1", "L_2", "L_3"]
+    group_list = ["new_customer_id", "warehouse_chain", "empty"]
+
 
     # Load data
     test_data = {}
@@ -166,9 +167,9 @@ if __name__ == "__main__":
 
         # Select the right group
 
-        if level == "L_6":
+        if level == "L_3":
 
-            print("Group:", "L_6")
+            print("Group:", "L_3")
 
             # selected group
             group_df = df.copy()

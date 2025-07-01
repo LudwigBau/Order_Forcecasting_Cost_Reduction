@@ -6,7 +6,7 @@ import subprocess
 if __name__ == "__main__":
     # Define the script's path
     clean_data = "../data_prep/clean_data.py"
-    create_datasets = "../data_prep/create_datasets.py"
+    create_datasets = "../data_prep/create_datasets_total_shop_warehouse.py"
     split_process_data = "../data_prep/split_process_data.py"
 
     # Use subprocess to run the script

@@ -78,33 +78,19 @@ def binary_encode_with_original(data, column):
 if __name__ == "__main__":
 
     # split all dfs from list and save in dictionary
-    df_list = ["L_1", "L_2", "L_3", "L_4", "L_5", "L_6"]
+    df_list = ["L_1", "L_2", "L_3"]
     dfs = {}
 
     for df_name in df_list:
 
-        # Add condition for L_4
-        if df_name == "L_4":
+        # Add condition for L_1
+        if df_name == "L_1":
             df = pd.read_pickle(f"../../data/intermediate/{df_name}.pkl").reset_index()
             # encode
             df = pre_processing(df, encode_cols=["tm_y", "quantity_decile"])
 
             # Create a BinaryEncoder instance for the new_customer_id column
             df = binary_encode_with_original(df, 'new_customer_id')
-
-            # split
-            train_df, val_df = ml_data_date_split(df, 8)
-            # add to dictionary
-            dfs[df_name] = {"train": train_df, "test": df}
-
-        # Add condition for L_1
-        elif df_name == "L_1":
-            df = pd.read_pickle(f"../../data/intermediate/{df_name}.pkl").reset_index()
-            # encode
-            df = pre_processing(df, encode_cols=["tm_y", "ratio_decile"])
-
-            # Create a BinaryEncoder instance for the new_product_id column
-            #df = binary_encode_with_original(df, 'new_product_id')
 
             # split
             train_df, val_df = ml_data_date_split(df, 8)

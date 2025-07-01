@@ -36,9 +36,10 @@ if __name__ == "__main__":
 
     # Load Data
 
-    # Only load warehouse_chain, customers and total to mimimize computational time
-    df_list = ["L_3", "L_4", "L_6"]
-    group_list = ["warehouse_chain", "new_customer_id", "empty"]
+    # List Datasets
+    df_list = ["L_1", "L_2", "L_3"]
+    group_list = ["new_customer_id", "warehouse_chain", "empty"]
+
 
 
     # Load data
@@ -133,7 +134,7 @@ if __name__ == "__main__":
         for category_name, feature_list in category_dict.items():
 
             # Use features from the current category
-            if level == "L_6":  # no group for L_6, tscv dependent
+            if level == "L_3":  # no group for L_6, tscv dependent
 
                 # Define Data
                 train_df, test_df = ml_data_date_split(test_data[level], 8)  # split data with custom function
@@ -295,7 +296,7 @@ if __name__ == "__main__":
         for category_name, feature_list in category_dict.items():
 
             # Use features from the current category
-            if level == "L_6":  # No group for top level
+            if level == "L_3":  # No group for top level
 
                 # Define Data
                 train_df, test_df = ml_data_date_split(test_data[level], 8)  # split data with custom function

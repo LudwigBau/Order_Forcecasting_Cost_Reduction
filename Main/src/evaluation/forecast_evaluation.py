@@ -9,7 +9,10 @@ from sklearn.metrics import mean_absolute_error as mae
 
 from itertools import combinations
 
-#data
+# Custom scripts
+from src.utils.parse_model_key import parse_model_key
+
+# data
 L_3 = pd.read_pickle("../../data/processed/L_3_test.pkl")
 
 # time series
@@ -125,11 +128,17 @@ def create_ensemble(backtest_df, pred_df, list_of_selected_models):
     backtest_list = []
     pred_list = []
 
-    # create list of combinations
-    model_pairs = list(combinations(list_of_selected_models, 2))
+    # Ensure the list of models is unique to avoid ensembles like "L_4_sarimax_L_4_sarimax"
+    unique_models = list(dict.fromkeys(list_of_selected_models))
+    print(f"Unique models (count: {len(unique_models)}): {unique_models}")
+
+    # create list of combinations from the unique models
+    model_pairs = list(combinations(unique_models, 2))
+    print(f"Total ensemble combinations to be created: {len(model_pairs)}")
 
     for pair in model_pairs:
-        # create ensembeles
+        #print(f"Creating ensemble for pair: {pair[0]} and {pair[1]}")
+        # create ensembles
         backtest_ensemble = (backtest_df[pair[0]] + backtest_df[pair[1]]) / 2
         pred_ensemble = (pred_df[pair[0]] + pred_df[pair[1]]) / 2
 
@@ -143,6 +152,8 @@ def create_ensemble(backtest_df, pred_df, list_of_selected_models):
 
     back_ens_df = pd.concat(backtest_list, axis=1)
     pred_ens_df = pd.concat(pred_list, axis=1)
+
+    print(f"Total ensembles created: {len(back_ens_df.columns)}")
 
     # Set index names
     back_ens_df.index.name = 'date'
@@ -158,6 +169,8 @@ def ensemble_metrics(backtest_df, pred_df):
     # Iterate over the dataframes and categories
 
     for category_name in backtest_df.columns:
+        # Decode the model key
+        parsed_name, weather_flag, holiday_flag = parse_model_key(category_name)
         # Access backtest data frame for the current level and category
         backtest = backtest_df[category_name]
         # Access prediction data frame for the current level and category
@@ -171,46 +184,46 @@ def ensemble_metrics(backtest_df, pred_df):
         val_mape = mape(backtest_df.actual, backtest)
         pred_mape = mape(pred_df.actual, pred)
 
-        # Calculate MAE
-        #val_mae = mae(backtest_df.actual, backtest)
-        #pred_mae = mae(pred_df.actual, pred)
-
         # Append the results to the metrics_data list
         metrics_data.append({
             'category': category_name,
+            'name': parsed_name,
+            'weather': weather_flag,
+            'holiday': holiday_flag,
             'val_rmse': val_rmse,
             'pred_rmse': pred_rmse,
             'val_mape': val_mape,
             'pred_mape': pred_mape,
-            # 'val_mae': val_mae,
-            # 'pred_mae': pred_mae
         })
 
     ensemble_metrics = pd.DataFrame(metrics_data)
 
     return ensemble_metrics
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     # List TS Models
     ts_model_names = ts_results["L_3"]["pred"].columns[0:5]
 
     # Run Functions and get individual metrics (without ensembles)
     back_df, pred_df = back_pred_df(ts_results, lgbm_results, xgb_results, lstm_results, nhits_results)
-    ind_metrics_df = ensemble_metrics(back_df, pred_df).sort_values("val_mape")
+    ind_metrics_df = ensemble_metrics(back_df, pred_df).sort_values("val_rmse")
 
-    # Get nest Models to create ensembles (to limit complexity)
+    print(f"Total number of individual models: {len(ind_metrics_df)}")
+
+    # Get 10 best Models to create ensembles (to limit complexity)
     list_of_selected_models = list(ind_metrics_df[1:11].category)
 
-    # add main benchmark (its not in top 10 of all models)
-    list_of_selected_models.append("L_4_sarimax")
+    # Add main benchmark if not already present
+    if "L_4_sarimax" not in list_of_selected_models:
+        list_of_selected_models.append("L_4_sarimax")
 
     # Create ensemble and save as df
     back_ens_df, pred_ens_df = create_ensemble(back_df, pred_df, list_of_selected_models)
 
     # Backtest and prediction values
-    full_back_df = back_df.merge(back_ens_df,  left_index=True, right_index=True, how="left")
-    full_pred_df = pred_df.merge(pred_ens_df,  left_index=True, right_index=True, how="left")
+    full_back_df = back_df.merge(back_ens_df, left_index=True, right_index=True, how="left")
+    full_pred_df = pred_df.merge(pred_ens_df, left_index=True, right_index=True, how="left")
 
     # Metrics
     ensemble_metrics_df = ensemble_metrics(full_back_df, full_pred_df).sort_values("pred_rmse")
@@ -225,4 +238,3 @@ if __name__ == "__main__":
     # save to excel
     ensemble_metrics_df.to_excel("../../data/modelling_results/ensemble_metrics_v2.xlsx")
     ind_metrics_df.to_excel("../../data/modelling_results/ind_metrics_v2.xlsx")
-

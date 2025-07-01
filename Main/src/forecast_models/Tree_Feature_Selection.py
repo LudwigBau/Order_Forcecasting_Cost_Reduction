@@ -33,7 +33,7 @@ if __name__ == "__main__":
     # Load Data
 
     # Only load warehouse_chain, customers and total to mimimize computational time
-    df_list = ["L_6"]
+    df_list = ["L_3"]
     group_list = ["empty"]
 
 
