@@ -40,7 +40,7 @@ To address this, our study focuses on the weekly staff sizing decision problem i
 
 Firstly, we undertake an exhaustive comparison of state-of-the-art forecasting methods, comparing classical models with machine learning (ML) and deep learning (DL) approaches. These methods utilise a range of features such as lag, momentum, and time, along with weather and holiday variables across three hierarchical levels to forecast future demand. Notably, we employ five-fold time series cross-validation in addition to a test set, thereby enhancing the robustness of our findings.
 
-Secondly, we leverage data from cross-validation and test samples to estimate seven distinct demand and forecast distributions for each of our 100 models. This is taken as input for a Monte Carlo simulation, generating 800 weekly simulations of actual and forecasted demand, thereby offering a nuanced understanding of various forecasting methods' reliability and performance.
+Secondly, we leverage data from cross-validation and test samples to estimate seven distinct demand and forecast distributions for each of our 90 models. This is taken as input for a Monte Carlo simulation, generating 800 weekly simulations of actual and forecasted demand, thereby offering a nuanced understanding of various forecasting methods' reliability and performance.
 
 Lastly, we introduce a multi-stage stochastic program with recourse to schedule planned workers based on forecasts and adapt with overtime and extra workers based on actual demand. This program utilises the simulated scenarios as inputs, allowing us to evaluate the operational impact of different forecasting methods in terms of labour costs and scheduling policies.
 
